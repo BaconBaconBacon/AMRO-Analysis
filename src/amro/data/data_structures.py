@@ -92,7 +92,7 @@ class OscillationKey:
         same_act = self.compare_exp_label(other_key.experiment_label)
         same_temp = self.compare_temperature(other_key.temperature)
         same_field = self.compare_magnetic_field(other_key.magnetic_field)
-        return same_act and same_temp and same_field and same_field
+        return same_act and same_temp and same_field
 
     def get_experiment_label(self) -> str:
         """Return the experiment label."""
@@ -602,7 +602,7 @@ class Experiment:
     wire_sep: float
     cross_section: float
     oscillations_dict: dict = field(default_factory=dict)
-    oscillations_count: float = 0
+    oscillations_count: int = 0
     material: str = None
 
     def add_oscillation(self, oscillation: AMROscillation) -> None:
@@ -680,8 +680,8 @@ class Experiment:
 
         oscillations = []
         for osc in self.oscillations_dict.values():
-            t_matches = (t is None) or (osc.compare_temperature(t))
-            h_matches = (h is None) or (osc.compare_magnetic_field(h))
+            t_matches = (t is None) or np.any(osc.compare_temperature(t))
+            h_matches = (h is None) or np.any(osc.compare_magnetic_field(h))
             if t_matches and h_matches:
                 oscillations.append(osc)
         return oscillations
@@ -725,7 +725,7 @@ class ProjectData:
 
     project_name: str
     experiments_dict: dict = field(default_factory=dict)
-    experiments_count: float = 0
+    experiments_count: int = 0
 
     fit_filter_str: str | None = None
 
@@ -903,11 +903,11 @@ class ProjectData:
                     fourier_result_df = u.query_dataframe(sub_sub_df, h=h)
                     osc = exper.get_oscillation(t=t, h=h)
 
-                    freqs = fourier_result_df[HEADER_FREQ].values
+                    freqs = fourier_result_df[HEADER_PARAM_FREQ_PREFIX].values
 
-                    mags = fourier_result_df[HEADER_MAG].values
-                    phases = fourier_result_df[HEADER_PHASE].values
-                    yf = mags[:, 0] + phases[:, 0] * 1j
+                    mags = fourier_result_df[HEADER_PARAM_AMP_PREFIX].values
+                    phases = fourier_result_df[HEADER_PHASE + "_rads"].values
+                    yf = mags * np.exp(1j * phases)
 
                     osc.add_fourier_result(xf=freqs, yf=yf)
 
@@ -938,11 +938,8 @@ class ProjectData:
         with open(fp, "rb") as f:
             return pickle.load(f)
 
-    def get_fit_results_as_df(self, filepath: Path | str | None = None) -> pd.DataFrame:
+    def get_fit_results_as_df(self) -> pd.DataFrame:
         """Convert all fit results to a DataFrame with one row per oscillation.
-
-        Args:
-            filepath: Optional file path (not currently used).
 
         Returns:
             DataFrame containing fit parameters and statistics.
@@ -993,7 +990,7 @@ class ProjectData:
                 self.project_name + "_fit_results_" + self.fit_filter_str + ".csv"
             )
 
-        df = self.get_fit_results_as_df(filepath=filepath)
+        df = self.get_fit_results_as_df()
         df.to_csv(filepath, index=False)
         return
 
@@ -1027,6 +1024,8 @@ class ProjectData:
             experiment = self.experiments_dict[act_label]
             for osc_key in experiment.oscillations_dict.keys():
                 osc = experiment.oscillations_dict[osc_key]
+                if osc.fourier_result is None:
+                    continue
                 fourier_dict = osc.fourier_result.fourier_results_dict
                 for freq in fourier_dict:
                     ft = fourier_dict[freq]

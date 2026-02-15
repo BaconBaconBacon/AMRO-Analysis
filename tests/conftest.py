@@ -45,13 +45,11 @@ def isolate_test_paths(tmp_path, monkeypatch):
     """
     # Patch the paths in all modules that import them
     monkeypatch.setattr("amro.data.data_structures.FINAL_DATA_PATH", tmp_path)
+    monkeypatch.setattr("amro.data.loader.RAW_DATA_PATH", tmp_path)
+    monkeypatch.setattr("amro.data.loader.PROCESSED_DATA_PATH", tmp_path)
+    monkeypatch.setattr("amro.data.cleaner.RAW_DATA_PATH", tmp_path)
+    monkeypatch.setattr("amro.data.cleaner.PROCESSED_DATA_PATH", tmp_path)
     monkeypatch.setattr("amro.features.fourier.FINAL_DATA_PATH", tmp_path)
-    # monkeypatch.setattr("amro.features.fourier.PROCESSED_DATA_PATH", tmp_path)
-    # monkeypatch.setattr("amro.models.fitter.FINAL_DATA_PATH", tmp_path)
-    # monkeypatch.setattr("amro.models.fitter.PROCESSED_DATA_PATH", tmp_path)
-    # monkeypatch.setattr("amro.models.fitter.PROCESSED_FIGURES_PATH", tmp_path)
-    # monkeypatch.setattr("amro.plotting.fitter.FINAL_DATA_PATH", tmp_path)
-    # monkeypatch.setattr("amro.plotting.fitter.PROCESSED_DATA_PATH", tmp_path)
     monkeypatch.setattr("amro.plotting.fitter.PROCESSED_FIGURES_PATH", tmp_path)
 
     return tmp_path
@@ -192,8 +190,7 @@ def sample_experiment():
         experiment_label=HEADER_EXPERIMENT_PREFIX + "11",
         geometry="perp",
         wire_sep=1.0,
-        width=0.5,
-        height=0.1,
+        cross_section=0.05,
     )
 
 
@@ -210,8 +207,7 @@ def populated_experiment():
         experiment_label=HEADER_EXPERIMENT_PREFIX + "11",
         geometry="perp",
         wire_sep=1.0,
-        width=0.5,
-        height=0.1,
+        cross_section=0.05,
     )
     for t in [2.0, 5.0, 10.0]:
         for h in [3.0, 7.0]:
